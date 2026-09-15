@@ -546,6 +546,8 @@
           <option value="wallet">Wallet</option>
           <option value="cod">COD</option>
         </select>
+        <input type="number" id="filter-amount-min" placeholder="Min &#8377;" min="0" style="width:100px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px;outline:none;">
+        <input type="number" id="filter-amount-max" placeholder="Max &#8377;" min="0" style="width:100px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px;outline:none;">
         <select id="filter-days">
           <option value="7">Last 7 days</option>
           <option value="30" selected>Last 30 days</option>
@@ -676,6 +678,8 @@
       document.getElementById('search-input').addEventListener('input', debounce(applyFilters, 300));
       document.getElementById('filter-status').addEventListener('change', applyFilters);
       document.getElementById('filter-method').addEventListener('change', applyFilters);
+      document.getElementById('filter-amount-min').addEventListener('input', debounce(applyFilters, 300));
+      document.getElementById('filter-amount-max').addEventListener('input', debounce(applyFilters, 300));
       document.getElementById('filter-days').addEventListener('change', fetchPayments);
     });
 
@@ -732,10 +736,17 @@
       const query = document.getElementById('search-input').value.toLowerCase().trim();
       const statusFilter = document.getElementById('filter-status').value;
       const methodFilter = document.getElementById('filter-method').value;
+      const minAmountVal = document.getElementById('filter-amount-min').value;
+      const maxAmountVal = document.getElementById('filter-amount-max').value;
+      const minAmount = minAmountVal ? parseFloat(minAmountVal) : null;
+      const maxAmount = maxAmountVal ? parseFloat(maxAmountVal) : null;
 
       filteredPayments = allPayments.filter(p => {
         if (statusFilter && p.status !== statusFilter) return false;
         if (methodFilter && p.method !== methodFilter) return false;
+        const amountInRupees = p.amount / 100;
+        if (minAmount !== null && amountInRupees < minAmount) return false;
+        if (maxAmount !== null && amountInRupees > maxAmount) return false;
         if (query) {
           const searchable = [
             p.id, p.contact, p.email, p.description,
