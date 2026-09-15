@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Razorpay Refund Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-2: #242836;
+      --border: #2e3347;
+      --text: #e4e6f0;
+      --text-muted: #8b8fa3;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #22c55e;
+      --success-bg: rgba(34, 197, 94, 0.12);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.12);
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.12);
+      --info: #8b5cf6;
+      --info-bg: rgba(139, 92, 246, 0.12);
+      --radius: 10px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.3);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ─── HEADER ─── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header h1 .logo {
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .connection-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ─── TABS ─── */
+    .tabs {
+      display: flex;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+    }
+    .tab {
+      padding: 12px 20px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    /* ─── MAIN ─── */
+    .main { padding: 24px 32px; max-width: 1440px; margin: 0 auto; }
+
+    /* ─── STATS ─── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .stat-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .stat-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* ─── TOOLBAR ─── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .search-box {
+      flex: 1;
+      min-width: 260px;
+      position: relative;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 10px 14px 10px 38px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-box input:focus { border-color: var(--primary); }
+    .search-box .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    select, .filter-btn {
+      padding: 10px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+      outline: none;
+    }
+    select:focus { border-color: var(--primary); }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover { border-color: var(--text-muted); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    /* ─── SELECTION BAR ─── */
+    .selection-bar {
+      background: var(--primary);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      animation: slideDown 0.2s ease;
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .selection-bar .left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 600;
+    }
+    .selection-bar .right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .selection-bar .btn {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+    }
+    .selection-bar .btn:hover { background: rgba(255,255,255,0.3); }
+    .selection-bar .btn-refund {
+      background: #fff;
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    /* ─── TABLE ─── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    thead th {
+      padding: 12px 16px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      text-align: left;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    tbody td {
+      padding: 14px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tbody tr { transition: background 0.15s; }
+    tbody tr:hover { background: var(--surface-2); }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr.selected { background: rgba(59, 130, 246, 0.08); }
+
+    .checkbox {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    /* ─── BADGES ─── */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .badge-captured { background: var(--success-bg); color: var(--success); }
+    .badge-refunded { background: var(--info-bg); color: var(--info); }
+    .badge-partial { background: var(--warning-bg); color: var(--warning); }
+    .badge-failed { background: var(--danger-bg); color: var(--danger); }
+    .badge-authorized { background: rgba(59, 130, 246, 0.12); color: var(--primary); }
+    .badge-cod { background: var(--warning-bg); color: var(--warning); }
+    .badge-prepaid { background: var(--success-bg); color: var(--success); }
+
+    .amount { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .phone { font-family: 'SF Mono', Monaco, monospace; font-size: 12px; color: var(--text-muted); }
+    .payment-id { font-family: 'SF Mono', Monaco, monospace; font-size: 11px; color: var(--text-muted); }
+    .customer-name { font-weight: 600; }
+    .date-cell { white-space: nowrap; color: var(--text-muted); font-size: 12px; }
+
+    /* ─── PAGINATION ─── */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 0;
+    }
+    .pagination .info { font-size: 13px; color: var(--text-muted); }
+    .page-btns { display: flex; gap: 6px; }
+
+    /* ─── MODAL ─── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      animation: fadeIn 0.2s;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      width: 560px;
+      max-width: 95vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow);
+      animation: scaleIn 0.2s ease;
+    }
+    @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-header h2 { font-size: 18px; font-weight: 700; }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+    }
+    .modal-body { padding: 24px; }
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .refund-preview-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--surface-2);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .refund-preview-item .left { display: flex; flex-direction: column; gap: 2px; }
+    .refund-preview-item .name { font-weight: 600; font-size: 14px; }
+    .refund-preview-item .id { font-size: 11px; color: var(--text-muted); font-family: monospace; }
+    .refund-preview-item .amt { font-size: 18px; font-weight: 700; color: var(--danger); }
+
+    .refund-total {
+      margin-top: 16px;
+      padding: 16px;
+      background: var(--danger-bg);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .refund-total .label { font-weight: 600; color: var(--danger); }
+    .refund-total .total { font-size: 24px; font-weight: 800; color: var(--danger); }
+
+    .warning-text {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: var(--warning-bg);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--warning);
+      line-height: 1.5;
+    }
+
+    /* ─── REFUND RESULT ─── */
+    .result-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--surface-2);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .result-icon { font-size: 20px; }
+    .result-info { flex: 1; }
+    .result-info .name { font-weight: 600; font-size: 14px; }
+    .result-info .detail { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ─── LOADING ─── */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px;
+      color: var(--text-muted);
+      gap: 10px;
+    }
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── EMPTY STATE ─── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-state h3 { font-size: 18px; color: var(--text); margin-bottom: 8px; }
+
+    /* ─── TOAST ─── */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toast {
+      padding: 14px 20px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: var(--shadow);
+      animation: slideIn 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toast-success { background: #16a34a; color: #fff; }
+    .toast-error { background: var(--danger); color: #fff; }
+    .toast-info { background: var(--primary); color: #fff; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* ─── REFUND HISTORY TAB ─── */
+    .refund-history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .refund-history-header h2 { font-size: 20px; font-weight: 700; }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 768px) {
+      .header { padding: 12px 16px; }
+      .main { padding: 16px; }
+      .tabs { padding: 0 16px; overflow-x: auto; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .toolbar { flex-direction: column; align-items: stretch; }
+      .search-box { min-width: auto; }
+      .table-wrap { overflow-x: auto; }
+      table { min-width: 900px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>
+      <span class="logo">R</span>
+      Razorpay Refund Dashboard
+    </h1>
+    <div class="header-right">
+      <div class="connection-dot"></div>
+      <span style="font-size:13px;color:var(--text-muted)">Live</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="payments" onclick="switchTab('payments')">Payments</div>
+    <div class="tab" data-tab="history" onclick="switchTab('history')">Refund History</div>
+  </div>
+
+  <div class="main">
+    <!-- PAYMENTS TAB -->
+    <div id="tab-payments">
+      <div class="stats-row" id="stats-row">
+        <div class="stat-card"><div class="stat-label">Total Payments</div><div class="stat-value" id="stat-total">--</div></div>
+        <div class="stat-card"><div class="stat-label">Captured (Refundable)</div><div class="stat-value" id="stat-captured" style="color:var(--success)">--</div></div>
+        <div class="stat-card"><div class="stat-label">Already Refunded</div><div class="stat-value" id="stat-refunded" style="color:var(--info)">--</div></div>
+        <div class="stat-card"><div class="stat-label">Total Amount</div><div class="stat-value" id="stat-amount">--</div></div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <span class="search-icon">&#128269;</span>
+          <input type="text" id="search-input" placeholder="Search by name, phone, email, order ID, payment ID...">
+        </div>
+        <select id="filter-status">
+          <option value="">All Statuses</option>
+          <option value="captured">Captured</option>
+          <option value="refunded">Refunded</option>
+          <option value="authorized">Authorized</option>
+          <option value="failed">Failed</option>
+        </select>
+        <select id="filter-method">
+          <option value="">All Methods</option>
+          <option value="upi">UPI</option>
+          <option value="card">Card</option>
+          <option value="netbanking">Netbanking</option>
+          <option value="wallet">Wallet</option>
+          <option value="cod">COD</option>
+        </select>
+        <select id="filter-days">
+          <option value="7">Last 7 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="60">Last 60 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="all">All time</option>
+        </select>
+        <button class="btn btn-primary" onclick="fetchPayments()">Refresh</button>
+      </div>
+
+      <div id="selection-bar" style="display:none" class="selection-bar">
+        <div class="left">
+          <span id="selected-count">0</span> payment(s) selected
+          <span style="font-weight:400;opacity:0.8">|</span>
+          Total: <span id="selected-total">&#8377;0</span>
+        </div>
+        <div class="right">
+          <button class="btn btn-sm" onclick="clearSelection()">Clear</button>
+          <button class="btn btn-sm btn-refund" onclick="openRefundModal()">Refund Selected</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th><input type="checkbox" class="checkbox" id="select-all" onchange="toggleSelectAll()"></th>
+              <th>Date</th>
+              <th>Payment ID</th>
+              <th>Customer</th>
+              <th>Phone</th>
+              <th>Method</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="payments-body">
+            <tr><td colspan="9"><div class="loading"><div class="spinner"></div> Loading payments...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination" id="pagination">
+        <div class="info" id="page-info">Showing 0 payments</div>
+        <div class="page-btns">
+          <button class="btn btn-sm btn-outline" id="btn-prev" onclick="prevPage()" disabled>Previous</button>
+          <button class="btn btn-sm btn-outline" id="btn-next" onclick="nextPage()">Next</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REFUND HISTORY TAB -->
+    <div id="tab-history" style="display:none">
+      <div class="refund-history-header">
+        <h2>Refund History</h2>
+        <button class="btn btn-primary" onclick="fetchRefundHistory()">Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Refund ID</th>
+              <th>Payment ID</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Speed</th>
+            </tr>
+          </thead>
+          <tbody id="refunds-body">
+            <tr><td colspan="6"><div class="loading"><div class="spinner"></div> Loading refund history...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="refund-pagination">
+        <div class="info" id="refund-page-info">Showing 0 refunds</div>
+        <div class="page-btns">
+          <button class="btn btn-sm btn-outline" id="refund-btn-prev" onclick="prevRefundPage()" disabled>Previous</button>
+          <button class="btn btn-sm btn-outline" id="refund-btn-next" onclick="nextRefundPage()">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REFUND CONFIRMATION MODAL -->
+  <div class="modal-overlay" id="refund-modal" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Confirm Refunds</h2>
+        <button class="modal-close" onclick="closeRefundModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="refund-modal-body"></div>
+      <div class="modal-footer" id="refund-modal-footer">
+        <button class="btn btn-outline" onclick="closeRefundModal()">Cancel</button>
+        <button class="btn btn-danger" id="btn-confirm-refund" onclick="processRefunds()">Confirm Refund</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REFUND RESULTS MODAL -->
+  <div class="modal-overlay" id="result-modal" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Refund Results</h2>
+        <button class="modal-close" onclick="closeResultModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="result-modal-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeResultModal()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script>
+    let allPayments = [];
+    let filteredPayments = [];
+    let selectedIds = new Set();
+    let currentPage = 0;
+    let refundPage = 0;
+    const PAGE_SIZE = 50;
+
+    // ─── INIT ───
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchPayments();
+      document.getElementById('search-input').addEventListener('input', debounce(applyFilters, 300));
+      document.getElementById('filter-status').addEventListener('change', applyFilters);
+      document.getElementById('filter-method').addEventListener('change', applyFilters);
+      document.getElementById('filter-days').addEventListener('change', fetchPayments);
+    });
+
+    // ─── TABS ───
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
+      document.getElementById('tab-payments').style.display = tab === 'payments' ? 'block' : 'none';
+      document.getElementById('tab-history').style.display = tab === 'history' ? 'block' : 'none';
+      if (tab === 'history') fetchRefundHistory();
+    }
+
+    // ─── FETCH PAYMENTS ───
+    async function fetchPayments() {
+      const tbody = document.getElementById('payments-body');
+      tbody.innerHTML = '<tr><td colspan="9"><div class="loading"><div class="spinner"></div> Loading payments...</div></td></tr>';
+
+      const daysFilter = document.getElementById('filter-days').value;
+      const now = Math.floor(Date.now() / 1000);
+      let from = '';
+      if (daysFilter !== 'all') from = now - (parseInt(daysFilter) * 86400);
+
+      try {
+        let allFetched = [];
+        let skip = 0;
+        let hasMore = true;
+
+        while (hasMore) {
+          const url = `/api/payments?count=100&skip=${skip}${from ? '&from=' + from : ''}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+
+          const items = data.items || [];
+          allFetched = allFetched.concat(items);
+          skip += 100;
+          hasMore = items.length === 100 && allFetched.length < 2000;
+        }
+
+        allPayments = allFetched;
+        selectedIds.clear();
+        currentPage = 0;
+        applyFilters();
+        updateStats();
+        toast('Loaded ' + allPayments.length + ' payments', 'info');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="icon">&#9888;</div><h3>Failed to load</h3><p>${err.message}</p></div></td></tr>`;
+        toast('Error: ' + err.message, 'error');
+      }
+    }
+
+    // ─── FILTERS ───
+    function applyFilters() {
+      const query = document.getElementById('search-input').value.toLowerCase().trim();
+      const statusFilter = document.getElementById('filter-status').value;
+      const methodFilter = document.getElementById('filter-method').value;
+
+      filteredPayments = allPayments.filter(p => {
+        if (statusFilter && p.status !== statusFilter) return false;
+        if (methodFilter && p.method !== methodFilter) return false;
+        if (query) {
+          const searchable = [
+            p.id, p.contact, p.email, p.description,
+            p.notes?.order_id, p.notes?.name, p.notes?.customer_name,
+            p.order_id
+          ].filter(Boolean).join(' ').toLowerCase();
+          if (!searchable.includes(query)) return false;
+        }
+        return true;
+      });
+
+      currentPage = 0;
+      renderPayments();
+    }
+
+    // ─── RENDER ───
+    function renderPayments() {
+      const tbody = document.getElementById('payments-body');
+      const start = currentPage * PAGE_SIZE;
+      const pageItems = filteredPayments.slice(start, start + PAGE_SIZE);
+
+      if (pageItems.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="icon">&#128230;</div><h3>No payments found</h3><p>Try adjusting your filters</p></div></td></tr>';
+        updatePagination();
+        return;
+      }
+
+      tbody.innerHTML = pageItems.map(p => {
+        const date = new Date(p.created_at * 1000);
+        const dateStr = date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        const timeStr = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+        const amount = (p.amount / 100).toLocaleString('en-IN');
+        const name = p.notes?.customer_name || p.notes?.name || p.email || 'Unknown';
+        const phone = p.contact ? p.contact.replace(/^\+91/, '') : '--';
+        const isSelected = selectedIds.has(p.id);
+        const canRefund = p.status === 'captured';
+        const statusClass = p.status === 'captured' ? 'badge-captured' :
+                           p.status === 'refunded' ? 'badge-refunded' :
+                           p.status === 'authorized' ? 'badge-authorized' : 'badge-failed';
+        const methodBadge = p.method === 'cod' ? 'badge-cod' : 'badge-prepaid';
+
+        return `<tr class="${isSelected ? 'selected' : ''}">
+          <td><input type="checkbox" class="checkbox" ${canRefund ? '' : 'disabled'} ${isSelected ? 'checked' : ''} onchange="toggleSelect('${p.id}')"></td>
+          <td class="date-cell">${dateStr}<br>${timeStr}</td>
+          <td class="payment-id">${p.id}</td>
+          <td class="customer-name">${escHtml(name)}</td>
+          <td class="phone">${phone}</td>
+          <td><span class="badge ${methodBadge}">${p.method || '--'}</span></td>
+          <td class="amount">&#8377;${amount}</td>
+          <td><span class="badge ${statusClass}">${p.status}</span></td>
+          <td>${canRefund ? `<button class="btn btn-sm btn-outline" onclick="refundSingle('${p.id}')">Refund</button>` : '--'}</td>
+        </tr>`;
+      }).join('');
+
+      updatePagination();
+      updateSelectionBar();
+    }
+
+    // ─── STATS ───
+    function updateStats() {
+      document.getElementById('stat-total').textContent = allPayments.length;
+      const captured = allPayments.filter(p => p.status === 'captured');
+      document.getElementById('stat-captured').textContent = captured.length;
+      document.getElementById('stat-refunded').textContent = allPayments.filter(p => p.status === 'refunded').length;
+      const totalAmt = allPayments.reduce((s, p) => s + (p.amount / 100), 0);
+      document.getElementById('stat-amount').textContent = '₹' + totalAmt.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    }
+
+    // ─── PAGINATION ───
+    function updatePagination() {
+      const total = filteredPayments.length;
+      const start = currentPage * PAGE_SIZE;
+      const end = Math.min(start + PAGE_SIZE, total);
+      document.getElementById('page-info').textContent = `Showing ${start + 1}-${end} of ${total} payments`;
+      document.getElementById('btn-prev').disabled = currentPage === 0;
+      document.getElementById('btn-next').disabled = end >= total;
+    }
+    function nextPage() { currentPage++; renderPayments(); window.scrollTo(0, 300); }
+    function prevPage() { currentPage--; renderPayments(); window.scrollTo(0, 300); }
+
+    // ─── SELECTION ───
+    function toggleSelect(id) {
+      if (selectedIds.has(id)) selectedIds.delete(id);
+      else selectedIds.add(id);
+      renderPayments();
+    }
+    function toggleSelectAll() {
+      const checked = document.getElementById('select-all').checked;
+      const start = currentPage * PAGE_SIZE;
+      const pageItems = filteredPayments.slice(start, start + PAGE_SIZE);
+      pageItems.forEach(p => {
+        if (p.status === 'captured') {
+          if (checked) selectedIds.add(p.id);
+          else selectedIds.delete(p.id);
+        }
+      });
+      renderPayments();
+    }
+    function clearSelection() {
+      selectedIds.clear();
+      document.getElementById('select-all').checked = false;
+      renderPayments();
+    }
+    function updateSelectionBar() {
+      const bar = document.getElementById('selection-bar');
+      if (selectedIds.size === 0) { bar.style.display = 'none'; return; }
+      bar.style.display = 'flex';
+      document.getElementById('selected-count').textContent = selectedIds.size;
+      const total = allPayments.filter(p => selectedIds.has(p.id)).reduce((s, p) => s + p.amount / 100, 0);
+      document.getElementById('selected-total').textContent = '₹' + total.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+    }
+
+    // ─── SINGLE REFUND ───
+    function refundSingle(id) {
+      selectedIds.clear();
+      selectedIds.add(id);
+      renderPayments();
+      openRefundModal();
+    }
+
+    // ─── REFUND MODAL ───
+    function openRefundModal() {
+      const selected = allPayments.filter(p => selectedIds.has(p.id));
+      if (selected.length === 0) return;
+
+      const totalAmount = selected.reduce((s, p) => s + p.amount / 100, 0);
+      const body = document.getElementById('refund-modal-body');
+
+      body.innerHTML = `
+        <p style="margin-bottom:16px;color:var(--text-muted)">The following payments will be refunded in full:</p>
+        ${selected.map(p => {
+          const name = p.notes?.customer_name || p.notes?.name || p.email || 'Unknown';
+          return `<div class="refund-preview-item">
+            <div class="left">
+              <div class="name">${escHtml(name)}</div>
+              <div class="id">${p.id}</div>
+            </div>
+            <div class="amt">&#8377;${(p.amount / 100).toLocaleString('en-IN')}</div>
+          </div>`;
+        }).join('')}
+        <div class="refund-total">
+          <div class="label">Total Refund Amount</div>
+          <div class="total">&#8377;${totalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
+        </div>
+        <div class="warning-text">
+          This action is <strong>irreversible</strong>. The refund amount will be deducted from your Razorpay balance
+          and credited back to the customer's original payment method. Processing time: instant for UPI, 5-7 days for cards/netbanking.
+        </div>
+      `;
+
+      document.getElementById('btn-confirm-refund').disabled = false;
+      document.getElementById('btn-confirm-refund').textContent = `Confirm Refund (${selected.length})`;
+      document.getElementById('refund-modal').style.display = 'flex';
+    }
+    function closeRefundModal() { document.getElementById('refund-modal').style.display = 'none'; }
+
+    // ─── PROCESS REFUNDS ───
+    async function processRefunds() {
+      const btn = document.getElementById('btn-confirm-refund');
+      btn.disabled = true;
+      btn.textContent = 'Processing...';
+
+      const selected = allPayments.filter(p => selectedIds.has(p.id));
+      const refunds = selected.map(p => ({ payment_id: p.id }));
+
+      try {
+        const res = await fetch('/api/refund/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refunds })
+        });
+        const data = await res.json();
+
+        closeRefundModal();
+        showRefundResults(data.results || []);
+
+        const successCount = (data.results || []).filter(r => r.success).length;
+        if (successCount > 0) {
+          toast(`${successCount} refund(s) processed successfully`, 'success');
+          selectedIds.clear();
+          setTimeout(fetchPayments, 1500);
+        }
+      } catch (err) {
+        toast('Refund failed: ' + err.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Confirm Refund';
+      }
+    }
+
+    // ─── REFUND RESULTS ───
+    function showRefundResults(results) {
+      const body = document.getElementById('result-modal-body');
+      body.innerHTML = results.map(r => {
+        const payment = allPayments.find(p => p.id === r.payment_id);
+        const name = payment?.notes?.customer_name || payment?.notes?.name || payment?.email || 'Unknown';
+        if (r.success) {
+          return `<div class="result-item">
+            <div class="result-icon" style="color:var(--success)">&#10003;</div>
+            <div class="result-info">
+              <div class="name">${escHtml(name)}</div>
+              <div class="detail">Refund ID: ${r.refund.id} | &#8377;${(r.refund.amount / 100).toLocaleString('en-IN')}</div>
+            </div>
+          </div>`;
+        } else {
+          return `<div class="result-item">
+            <div class="result-icon" style="color:var(--danger)">&#10007;</div>
+            <div class="result-info">
+              <div class="name">${escHtml(name)}</div>
+              <div class="detail" style="color:var(--danger)">${r.error}</div>
+            </div>
+          </div>`;
+        }
+      }).join('');
+      document.getElementById('result-modal').style.display = 'flex';
+    }
+    function closeResultModal() { document.getElementById('result-modal').style.display = 'none'; }
+
+    // ─── REFUND HISTORY TAB ───
+    async function fetchRefundHistory() {
+      const tbody = document.getElementById('refunds-body');
+      tbody.innerHTML = '<tr><td colspan="6"><div class="loading"><div class="spinner"></div> Loading refund history...</div></td></tr>';
+
+      try {
+        let allRefunds = [];
+        let skip = 0;
+        let hasMore = true;
+
+        while (hasMore) {
+          const res = await fetch(`/api/refunds?count=100&skip=${skip}`);
+          const data = await res.json();
+          if (data.error) throw new Error(data.error);
+          const items = data.items || [];
+          allRefunds = allRefunds.concat(items);
+          skip += 100;
+          hasMore = items.length === 100 && allRefunds.length < 1000;
+        }
+
+        if (allRefunds.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">&#128230;</div><h3>No refunds yet</h3></div></td></tr>';
+          return;
+        }
+
+        refundPage = 0;
+        renderRefundHistory(allRefunds);
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">&#9888;</div><h3>Failed to load</h3><p>${err.message}</p></div></td></tr>`;
+      }
+    }
+
+    let allRefundsData = [];
+    function renderRefundHistory(refunds) {
+      if (refunds) allRefundsData = refunds;
+      const tbody = document.getElementById('refunds-body');
+      const start = refundPage * PAGE_SIZE;
+      const pageItems = allRefundsData.slice(start, start + PAGE_SIZE);
+
+      tbody.innerHTML = pageItems.map(r => {
+        const date = new Date(r.created_at * 1000);
+        const dateStr = date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        const timeStr = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+        const statusClass = r.status === 'processed' ? 'badge-captured' : r.status === 'pending' ? 'badge-authorized' : 'badge-failed';
+
+        return `<tr>
+          <td class="date-cell">${dateStr}<br>${timeStr}</td>
+          <td class="payment-id">${r.id}</td>
+          <td class="payment-id">${r.payment_id}</td>
+          <td class="amount">&#8377;${(r.amount / 100).toLocaleString('en-IN')}</td>
+          <td><span class="badge ${statusClass}">${r.status}</span></td>
+          <td>${r.speed_processed || r.speed_requested || '--'}</td>
+        </tr>`;
+      }).join('');
+
+      const total = allRefundsData.length;
+      const end = Math.min(start + PAGE_SIZE, total);
+      document.getElementById('refund-page-info').textContent = `Showing ${start + 1}-${end} of ${total} refunds`;
+      document.getElementById('refund-btn-prev').disabled = refundPage === 0;
+      document.getElementById('refund-btn-next').disabled = end >= total;
+    }
+    function nextRefundPage() { refundPage++; renderRefundHistory(); }
+    function prevRefundPage() { refundPage--; renderRefundHistory(); }
+
+    // ─── UTILS ───
+    function escHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+    function debounce(fn, ms) {
+      let t;
+      return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+    }
+    function toast(msg, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      el.className = 'toast toast-' + type;
+      el.textContent = msg;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
+  </script>
+</body>
+</html>
