@@ -531,6 +531,9 @@
           <span class="search-icon">&#128269;</span>
           <input type="text" id="search-input" placeholder="Search by name, phone, email, order ID, payment ID...">
         </div>
+        <select id="filter-store">
+          <option value="">All Stores</option>
+        </select>
         <select id="filter-status">
           <option value="">All Statuses</option>
           <option value="captured">Captured</option>
@@ -577,6 +580,7 @@
               <th><input type="checkbox" class="checkbox" id="select-all" onchange="toggleSelectAll()"></th>
               <th>Date</th>
               <th>Payment ID</th>
+              <th>Store</th>
               <th>Customer</th>
               <th>Phone</th>
               <th>Method</th>
@@ -586,7 +590,7 @@
             </tr>
           </thead>
           <tbody id="payments-body">
-            <tr><td colspan="9"><div class="loading"><div class="spinner"></div> Loading payments...</div></td></tr>
+            <tr><td colspan="10"><div class="loading"><div class="spinner"></div> Loading payments...</div></td></tr>
           </tbody>
         </table>
       </div>
@@ -672,9 +676,39 @@
     let refundPage = 0;
     const PAGE_SIZE = 50;
 
+    // ─── STORES ───
+    // A payment belongs to a store if any keyword appears in its description,
+    // email or notes (which carry the Shopify store name / domain).
+    // Edit the keywords here if a store is not being detected.
+    const STORES = [
+      { name: 'Dr Nourish',      keywords: ['dr nourish', 'drnourish', 'dr-nourish', 'nourish'] },
+      { name: 'ZOC',             keywords: ['zoc'] },
+      { name: 'Daily Salad Mix', keywords: ['daily salad', 'dailysalad', 'daily-salad', 'salad mix'] },
+      { name: 'Jaadu Diet',      keywords: ['jaadu diet', 'jaadudiet', 'jaadu-diet', 'jaadu'] },
+    ];
+    const UNKNOWN_STORE = 'Unknown';
+
+    function getStore(p) {
+      if (p._store) return p._store;
+      const text = [p.description, p.email, JSON.stringify(p.notes || {})]
+        .filter(Boolean).join(' ').toLowerCase();
+      const match = STORES.find(s => s.keywords.some(k => text.includes(k)));
+      p._store = match ? match.name : UNKNOWN_STORE;
+      return p._store;
+    }
+
+    function populateStoreFilter() {
+      const sel = document.getElementById('filter-store');
+      sel.innerHTML = '<option value="">All Stores</option>' +
+        [...STORES.map(s => s.name), UNKNOWN_STORE]
+          .map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+    }
+
     // ─── INIT ───
     document.addEventListener('DOMContentLoaded', () => {
+      populateStoreFilter();
       fetchPayments();
+      document.getElementById('filter-store').addEventListener('change', applyFilters);
       document.getElementById('search-input').addEventListener('input', debounce(applyFilters, 300));
       document.getElementById('filter-status').addEventListener('change', applyFilters);
       document.getElementById('filter-method').addEventListener('change', applyFilters);
@@ -695,7 +729,7 @@
     // ─── FETCH PAYMENTS ───
     async function fetchPayments() {
       const tbody = document.getElementById('payments-body');
-      tbody.innerHTML = '<tr><td colspan="9"><div class="loading"><div class="spinner"></div> Loading payments...</div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10"><div class="loading"><div class="spinner"></div> Loading payments...</div></td></tr>';
 
       const daysFilter = document.getElementById('filter-days').value;
       const now = Math.floor(Date.now() / 1000);
@@ -726,7 +760,7 @@
         updateStats();
         toast('Loaded ' + allPayments.length + ' payments', 'info');
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="icon">&#9888;</div><h3>Failed to load</h3><p>${err.message}</p></div></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="icon">&#9888;</div><h3>Failed to load</h3><p>${err.message}</p></div></td></tr>`;
         toast('Error: ' + err.message, 'error');
       }
     }
@@ -734,6 +768,7 @@
     // ─── FILTERS ───
     function applyFilters() {
       const query = document.getElementById('search-input').value.toLowerCase().trim();
+      const storeFilter = document.getElementById('filter-store').value;
       const statusFilter = document.getElementById('filter-status').value;
       const methodFilter = document.getElementById('filter-method').value;
       const minAmountVal = document.getElementById('filter-amount-min').value;
@@ -742,6 +777,7 @@
       const maxAmount = maxAmountVal ? parseFloat(maxAmountVal) : null;
 
       filteredPayments = allPayments.filter(p => {
+        if (storeFilter && getStore(p) !== storeFilter) return false;
         if (statusFilter && p.status !== statusFilter) return false;
         if (methodFilter && p.method !== methodFilter) return false;
         const amountInRupees = p.amount / 100;
@@ -750,8 +786,8 @@
         if (query) {
           const searchable = [
             p.id, p.contact, p.email, p.description,
-            p.notes?.order_id, p.notes?.name, p.notes?.customer_name,
-            p.order_id
+            ...Object.values(p.notes || {}).map(String),
+            p.order_id, getStore(p)
           ].filter(Boolean).join(' ').toLowerCase();
           if (!searchable.includes(query)) return false;
         }
@@ -769,7 +805,7 @@
       const pageItems = filteredPayments.slice(start, start + PAGE_SIZE);
 
       if (pageItems.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="icon">&#128230;</div><h3>No payments found</h3><p>Try adjusting your filters</p></div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="icon">&#128230;</div><h3>No payments found</h3><p>Try adjusting your filters</p></div></td></tr>';
         updatePagination();
         return;
       }
@@ -792,6 +828,7 @@
           <td><input type="checkbox" class="checkbox" ${canRefund ? '' : 'disabled'} ${isSelected ? 'checked' : ''} onchange="toggleSelect('${p.id}')"></td>
           <td class="date-cell">${dateStr}<br>${timeStr}</td>
           <td class="payment-id">${p.id}</td>
+          <td>${escHtml(getStore(p))}</td>
           <td class="customer-name">${escHtml(name)}</td>
           <td class="phone">${phone}</td>
           <td><span class="badge ${methodBadge}">${p.method || '--'}</span></td>
