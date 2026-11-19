@@ -730,14 +730,29 @@
     // Razorpay returns at most 100 items per call, newest first. Load every page
     // (a few in parallel) until a short page says there is nothing older.
     const PAGE_LIMIT = 100;
-    const PARALLEL_PAGES = 5;
+    const PARALLEL_PAGES = 4;
     const MAX_ITEMS = 100000; // safety stop so a runaway load can't hang the browser
+    const PAGE_RETRIES = 4;   // a long "All time" load makes ~100 calls; one dropped call shouldn't kill it
+
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
 
     async function fetchPage(baseUrl, skip) {
-      const res = await fetch(`${baseUrl}count=${PAGE_LIMIT}&skip=${skip}`);
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      return data.items || [];
+      let lastErr;
+      for (let attempt = 0; attempt <= PAGE_RETRIES; attempt++) {
+        if (attempt > 0) await sleep(1000 * 2 ** (attempt - 1)); // 1s, 2s, 4s, 8s
+        try {
+          const res = await fetch(`${baseUrl}count=${PAGE_LIMIT}&skip=${skip}`);
+          let data;
+          try { data = await res.json(); } catch { data = {}; }
+          if (res.ok && !data.error) return data.items || [];
+          lastErr = new Error(data.error || `Server returned ${res.status}`);
+          // 4xx other than rate limiting won't fix itself, so stop retrying
+          if (res.status >= 400 && res.status < 500 && res.status !== 429) break;
+        } catch (err) {
+          lastErr = err; // network drop ("Failed to fetch"): retry
+        }
+      }
+      throw new Error(`${lastErr.message} (while loading records ${skip + 1}-${skip + PAGE_LIMIT}, after ${PAGE_RETRIES} retries)`);
     }
 
     async function fetchAllPages(baseUrl, onProgress) {
@@ -791,8 +806,14 @@
           toast('Loaded ' + allPayments.length.toLocaleString('en-IN') + ' payments', 'info');
         }
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="icon">&#9888;</div><h3>Failed to load</h3><p>${err.message}</p></div></td></tr>`;
-        toast('Error: ' + err.message, 'error');
+        if (allPayments.length > 0) {
+          // Keep the list that was already on screen rather than wiping it.
+          renderPayments();
+          toast('Reload failed, showing the list loaded earlier. Press Refresh to try again. ' + err.message, 'error');
+        } else {
+          tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="icon">&#9888;</div><h3>Failed to load</h3><p>${escHtml(err.message)}</p><p style="margin-top:8px">Press Refresh to try again.</p></div></td></tr>`;
+          toast('Error: ' + err.message, 'error');
+        }
       }
     }
 

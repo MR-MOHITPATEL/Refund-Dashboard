@@ -35,7 +35,7 @@ app.get('/api/payments', async (req, res) => {
     const payments = await razorpay.payments.all(options);
     res.json(payments);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.statusCode || 500).json({ error: err.error?.description || err.message || "Razorpay request failed" });
   }
 });
 
@@ -44,7 +44,7 @@ app.get('/api/payments/:id', async (req, res) => {
     const payment = await razorpay.payments.fetch(req.params.id);
     res.json(payment);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.statusCode || 500).json({ error: err.error?.description || err.message || "Razorpay request failed" });
   }
 });
 
@@ -53,7 +53,7 @@ app.get('/api/payments/:id/refunds', async (req, res) => {
     const refunds = await razorpay.payments.fetchMultipleRefund(req.params.id);
     res.json(refunds);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.statusCode || 500).json({ error: err.error?.description || err.message || "Razorpay request failed" });
   }
 });
 
@@ -69,7 +69,7 @@ app.post('/api/refund', async (req, res) => {
     const refund = await razorpay.payments.refund(payment_id, refundOptions);
     res.json({ success: true, refund });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.statusCode || 500).json({ error: err.error?.description || err.message || "Razorpay request failed" });
   }
 });
 
@@ -90,13 +90,13 @@ app.post('/api/refund/bulk', async (req, res) => {
         const refund = await razorpay.payments.refund(item.payment_id, refundOptions);
         results.push({ payment_id: item.payment_id, success: true, refund });
       } catch (err) {
-        results.push({ payment_id: item.payment_id, success: false, error: err.message });
+        results.push({ payment_id: item.payment_id, success: false, error: err.error?.description || err.message || "Razorpay request failed" });
       }
     }
 
     res.json({ results });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.statusCode || 500).json({ error: err.error?.description || err.message || "Razorpay request failed" });
   }
 });
 
@@ -110,7 +110,7 @@ app.get('/api/refunds', async (req, res) => {
     const refunds = await razorpay.refunds.all(options);
     res.json(refunds);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.statusCode || 500).json({ error: err.error?.description || err.message || "Razorpay request failed" });
   }
 });
 
