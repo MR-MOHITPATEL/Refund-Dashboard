@@ -726,6 +726,42 @@
       if (tab === 'history') fetchRefundHistory();
     }
 
+    // ─── PAGED FETCH ───
+    // Razorpay returns at most 100 items per call, newest first. Load every page
+    // (a few in parallel) until a short page says there is nothing older.
+    const PAGE_LIMIT = 100;
+    const PARALLEL_PAGES = 5;
+    const MAX_ITEMS = 100000; // safety stop so a runaway load can't hang the browser
+
+    async function fetchPage(baseUrl, skip) {
+      const res = await fetch(`${baseUrl}count=${PAGE_LIMIT}&skip=${skip}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      return data.items || [];
+    }
+
+    async function fetchAllPages(baseUrl, onProgress) {
+      const byId = new Map(); // de-duplicates rows that shift between pages while loading
+      let skip = 0;
+      let done = false;
+      let truncated = false;
+
+      while (!done) {
+        const skips = Array.from({ length: PARALLEL_PAGES }, (_, i) => skip + i * PAGE_LIMIT);
+        skip += PARALLEL_PAGES * PAGE_LIMIT;
+        const pages = await Promise.all(skips.map(s => fetchPage(baseUrl, s)));
+        for (const items of pages) {
+          items.forEach(it => byId.set(it.id, it));
+          if (items.length < PAGE_LIMIT) done = true;
+        }
+        if (onProgress) onProgress(byId.size);
+        if (!done && byId.size >= MAX_ITEMS) { done = true; truncated = true; }
+      }
+
+      const items = [...byId.values()].sort((a, b) => b.created_at - a.created_at);
+      return { items, truncated };
+    }
+
     // ─── FETCH PAYMENTS ───
     async function fetchPayments() {
       const tbody = document.getElementById('payments-body');
@@ -737,28 +773,23 @@
       if (daysFilter !== 'all') from = now - (parseInt(daysFilter) * 86400);
 
       try {
-        let allFetched = [];
-        let skip = 0;
-        let hasMore = true;
+        const { items, truncated } = await fetchAllPages(
+          `/api/payments?${from ? 'from=' + from + '&' : ''}`,
+          n => {
+            tbody.innerHTML = `<tr><td colspan="10"><div class="loading"><div class="spinner"></div> Loading payments... ${n.toLocaleString('en-IN')} so far</div></td></tr>`;
+          }
+        );
 
-        while (hasMore) {
-          const url = `/api/payments?count=100&skip=${skip}${from ? '&from=' + from : ''}`;
-          const res = await fetch(url);
-          const data = await res.json();
-          if (data.error) throw new Error(data.error);
-
-          const items = data.items || [];
-          allFetched = allFetched.concat(items);
-          skip += 100;
-          hasMore = items.length === 100 && allFetched.length < 2000;
-        }
-
-        allPayments = allFetched;
+        allPayments = items;
         selectedIds.clear();
         currentPage = 0;
         applyFilters();
         updateStats();
-        toast('Loaded ' + allPayments.length + ' payments', 'info');
+        if (truncated) {
+          toast(`Loaded the latest ${allPayments.length.toLocaleString('en-IN')} payments only. Pick a shorter date range to see older ones.`, 'error');
+        } else {
+          toast('Loaded ' + allPayments.length.toLocaleString('en-IN') + ' payments', 'info');
+        }
       } catch (err) {
         tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="icon">&#9888;</div><h3>Failed to load</h3><p>${err.message}</p></div></td></tr>`;
         toast('Error: ' + err.message, 'error');
@@ -1007,19 +1038,9 @@
       tbody.innerHTML = '<tr><td colspan="6"><div class="loading"><div class="spinner"></div> Loading refund history...</div></td></tr>';
 
       try {
-        let allRefunds = [];
-        let skip = 0;
-        let hasMore = true;
-
-        while (hasMore) {
-          const res = await fetch(`/api/refunds?count=100&skip=${skip}`);
-          const data = await res.json();
-          if (data.error) throw new Error(data.error);
-          const items = data.items || [];
-          allRefunds = allRefunds.concat(items);
-          skip += 100;
-          hasMore = items.length === 100 && allRefunds.length < 1000;
-        }
+        const { items: allRefunds } = await fetchAllPages('/api/refunds?', n => {
+          tbody.innerHTML = `<tr><td colspan="6"><div class="loading"><div class="spinner"></div> Loading refund history... ${n.toLocaleString('en-IN')} so far</div></td></tr>`;
+        });
 
         if (allRefunds.length === 0) {
           tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">&#128230;</div><h3>No refunds yet</h3></div></td></tr>';
